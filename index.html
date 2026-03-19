@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Comptable IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f4f0;
+  --card: #ffffff;
+  --card2: #fafaf8;
+  --border: #e2e0d8;
+  --border2: #d0cdc3;
+  --ink: #1a1916;
+  --ink2: #6b6860;
+  --ink3: #9b9890;
+  --accent: #2563eb;
+  --accent-bg: #eff4ff;
+  --green: #16a34a;
+  --green-bg: #f0fdf4;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --amber: #d97706;
+  --amber-bg: #fffbeb;
+  --font: 'Sora', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --r: 14px;
+  --r-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* HEADER */
+header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+.logo-mark {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--ink); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700;
+}
+.header-right { display: flex; align-items: center; gap: 12px; }
+.badge {
+  padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  background: var(--green-bg); color: var(--green);
+  border: 1px solid #bbf7d0;
+}
+.period-select {
+  padding: 6px 12px; border: 1px solid var(--border2); border-radius: var(--r-sm);
+  background: var(--card); font-family: var(--font); font-size: 13px;
+  color: var(--ink); cursor: pointer; outline: none;
+}
+
+/* LAYOUT */
+.app-layout { display: flex; flex: 1; height: calc(100vh - 60px); }
+
+/* NAV SIDEBAR */
+nav {
+  width: 220px; background: var(--card); border-right: 1px solid var(--border);
+  padding: 20px 12px; display: flex; flex-direction: column; gap: 4px;
+  flex-shrink: 0;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--r-sm); cursor: pointer;
+  font-size: 14px; font-weight: 500; color: var(--ink2);
+  transition: all .15s; border: 1px solid transparent;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg); color: var(--ink); }
+.nav-item.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+.nav-sep { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+
+/* MAIN CONTENT */
+main { flex: 1; overflow-y: auto; padding: 28px; }
+main::-webkit-scrollbar { width: 5px; }
+main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+.page { display: none; animation: fadeIn .25s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+.page-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.page-sub { font-size: 14px; color: var(--ink2); margin-bottom: 24px; }
+
+/* CARDS GRID */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px;
+  box-shadow: var(--shadow);
+}
+.kpi-label { font-size: 12px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+.kpi-value { font-size: 26px; font-weight: 700; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.kpi-delta { font-size: 12px; font-weight: 500; }
+.kpi-delta.up { color: var(--green); }
+.kpi-delta.down { color: var(--red); }
+
+/* SECTION CARD */
+.s-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 22px;
+  box-shadow: var(--shadow); margin-bottom: 18px;
+}
+.s-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.s-card-title { font-size: 15px; font-weight: 600; }
+
+/* TABLE */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.data-table th { text-align: left; padding: 0 12px 10px; font-size: 11px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+.data-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); color: var(--ink); vertical-align: middle; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--bg); }
+
+.tag {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.tag.income { background: var(--green-bg); color: var(--green); }
+.tag.expense { background: var(--red-bg); color: var(--red); }
+.tag.pending { background: var(--amber-bg); color: var(--amber); }
+
+.amount { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+.amount.pos { color: var(--green); }
+.amount.neg { color: var(--red); }
+
+/* BUTTONS */
+.btn {
+  padding: 8px 16px; border-radius: var(--r-sm); font-family: var(--font);
+  font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+  transition: all .15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--ink); color: #fff; }
+.btn-primary:hover { background: #2d2c29; }
+.btn-ghost { background: transparent; color: var(--ink2); border: 1px solid var(--border2); }
+.btn-ghost:hover { background: var(--bg); color: var(--ink); }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: #1d4ed8; }
+
+/* FORM ELEMENTS */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.form-row.full { grid-template-columns: 1fr; }
+.form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+label.field-label { display: block; font-size: 12px; font-weight: 600; color: var(--ink2); margin-bottom: 5px; }
+input[type=text], input[type=number], input[type=date], select, textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border2);
+  border-radius: var(--r-sm); font-family: var(--font); font-size: 13.5px;
+  color: var(--ink); background: var(--card); outline: none;
+  transition: border-color .15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+textarea { resize: none; min-height: 80px; }
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 2px dashed var(--border2); border-radius: var(--r);
+  padding: 36px 20px; text-align: center; cursor: pointer;
+  transition: all .2s; background: var(--card2);
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: var(--accent-bg); }
+.upload-icon { font-size: 32px; margin-bottom: 10px; }
+.upload-text { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.upload-sub { font-size: 12px; color: var(--ink3); }
+#file-input { display: none; }
+
+/* AI CHAT PANEL */
+.ai-panel {
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden;
+}
+.ai-panel-header {
+  background: var(--ink); color: #fff; padding: 14px 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.ai-panel-header .ai-name { font-size: 14px; font-weight: 600; }
+.ai-panel-header .ai-sub { font-size: 11px; opacity: .6; }
+.ai-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+#ai-messages {
+  padding: 16px; max-height: 340px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px;
+}
+#ai-messages::-webkit-scrollbar { width: 4px; }
+#ai-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+.ai-msg { max-width: 85%; }
+.ai-msg.assistant { align-self: flex-start; }
+.ai-msg.user { align-self: flex-end; }
+.ai-bubble {
+  padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.6;
+}
+.ai-msg.assistant .ai-bubble {
+  background: var(--card); border: 1px solid var(--border);
+  border-bottom-left-radius: 3px;
+}
+.ai-msg.user .ai-bubble {
+  background: var(--ink); color: #fff;
+  border-bottom-right-radius: 3px;
+}
+.ai-sender { font-size: 11px; font-weight: 600; color: var(--ink3); margin-bottom: 4px; }
+.ai-msg.user .ai-sender { text-align: right; }
+
+.ai-input-row {
+  display: flex; gap: 8px; padding: 12px 16px;
+  border-top: 1px solid var(--border); background: var(--card);
+}
+.ai-input {
+  flex: 1; border: 1px solid var(--border2); border-radius: var(--r-sm);
+  padding: 8px 12px; font-family: var(--font); font-size: 13.5px;
+  outline: none; transition: border-color .15s;
+}
+.ai-input:focus { border-color: var(--accent); }
+
+.quick-pills { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 0; }
+.pill {
+  padding: 5px 11px; border: 1px solid var(--border2); border-radius: 20px;
+  font-size: 12px; font-weight: 500; cursor: pointer; background: var(--card);
+  transition: all .15s; color: var(--ink2);
+}
+.pill:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+/* MINI BARS */
+.bar-chart { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-label { width: 90px; font-size: 12px; color: var(--ink2); text-align: right; flex-shrink: 0; }
+.bar-track { flex: 1; height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 5px; transition: width .6s cubic-bezier(.22,1,.36,1); }
+.bar-val { width: 70px; font-family: var(--mono); font-size: 12px; color: var(--ink2); }
+
+/* DONUT */
+.donut-wrap { display: flex; align-items: center; gap: 24px; }
+.donut-legend { display: flex; flex-direction: column; gap: 8px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.legend-label { color: var(--ink2); flex: 1; }
+.legend-val { font-family: var(--mono); font-size: 12px; font-weight: 500; }
+
+/* REPORT STYLES */
+.report-wrapper {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.report-header {
+  padding: 28px 32px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.report-header-left {}
+.report-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase; margin-bottom: 10px;
+}
+.report-badge.mensuel  { background: var(--accent-bg); color: var(--accent); border: 1px solid #bfdbfe; }
+.report-badge.fiscal   { background: var(--amber-bg);  color: var(--amber);  border: 1px solid #fde68a; }
+.report-badge.cashflow { background: var(--green-bg);  color: var(--green);  border: 1px solid #bbf7d0; }
+.report-badge.audit    { background: var(--red-bg);    color: var(--red);    border: 1px solid #fecaca; }
+.report-title-main { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.report-meta { font-size: 12px; color: var(--ink3); }
+.report-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.report-kpis {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+.report-kpi {
+  padding: 20px 24px; border-right: 1px solid var(--border);
+}
+.report-kpi:last-child { border-right: none; }
+.report-kpi-label { font-size: 11px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.report-kpi-value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.report-kpi-value.green { color: var(--green); }
+.report-kpi-value.red   { color: var(--red); }
+.report-kpi-value.blue  { color: var(--accent); }
+
+.report-body { padding: 28px 32px; }
+
+/* Markdown-like rendering */
+.report-body h1 { font-size: 17px; font-weight: 700; margin: 0 0 16px; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+.report-body h2 {
+  font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--ink3); margin: 28px 0 12px; display: flex; align-items: center; gap: 8px;
+}
+.report-body h2::before { content:''; display:block; width:3px; height:14px; border-radius:2px; background: var(--accent); }
+.report-body h3 { font-size: 14px; font-weight: 600; margin: 16px 0 8px; color: var(--ink); }
+.report-body p { font-size: 14px; line-height: 1.75; color: var(--ink2); margin-bottom: 12px; }
+.report-body ul { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.report-body li {
+  font-size: 13.5px; color: var(--ink2); line-height: 1.6;
+  padding: 9px 14px; background: var(--card2); border-radius: var(--r-sm);
+  border-left: 3px solid var(--border2);
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.report-body li::before { content: '→'; color: var(--accent); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.report-body strong { font-weight: 600; color: var(--ink); }
+.report-body em { font-style: italic; color: var(--ink3); }
+
+.report-highlight {
+  background: var(--accent-bg); border: 1px solid #bfdbfe;
+  border-radius: var(--r-sm); padding: 14px 16px; margin: 16px 0;
+  font-size: 13.5px; color: var(--accent); line-height: 1.6;
+}
+.report-highlight.warning { background: var(--amber-bg); border-color: #fde68a; color: var(--amber); }
+.report-highlight.success { background: var(--green-bg); border-color: #bbf7d0; color: var(--green); }
+.report-highlight.danger  { background: var(--red-bg);   border-color: #fecaca; color: var(--red); }
+
+.report-footer {
+  padding: 16px 32px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--card2);
+}
+.report-footer-note { font-size: 11px; color: var(--ink3); }
+.report-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 20px; gap: 16px;
+}
+.report-loading-spinner {
+  width: 36px; height: 36px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.report-loading-text { font-size: 14px; color: var(--ink3); }
+
+/* TYPING */
+.typing-dots { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+.typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--ink3); animation: td 1.2s infinite; }
+.typing-dots span:nth-child(2) { animation-delay: .15s; }
+.typing-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes td { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+
+/* NOTIFICATION */
+.notif {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--ink); color: #fff;
+  padding: 12px 18px; border-radius: var(--r-sm);
+  font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow-md);
+  animation: slideUp .3s ease;
+  z-index: 999;
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  nav { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">€</div>
+    Comptable IA
+  </div>
+  <div class="header-right">
+    <select class="period-select" onchange="updatePeriod(this.value)">
+      <option value="2025">Année 2025</option>
+      <option value="2024">Année 2024</option>
+      <option value="q1">T1 2025</option>
+      <option value="q2">T2 2025</option>
+    </select>
+    <div class="badge">✓ IA active</div>
+  </div>
+</header>
+
+<div class="app-layout">
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-item active" onclick="showPage('dashboard', this)">
+      <span class="nav-icon">📊</span> Tableau de bord
+    </div>
+    <div class="nav-item" onclick="showPage('transactions', this)">
+      <span class="nav-icon">💳</span> Transactions
+    </div>
+    <div class="nav-item" onclick="showPage('factures', this)">
+      <span class="nav-icon">🧾</span> Factures / PDF
+    </div>
+    <div class="nav-item" onclick="showPage('rapports', this)">
+      <span class="nav-icon">📄</span> Rapports IA
+    </div>
+    <hr class="nav-sep">
+    <div class="nav-item" onclick="showPage('assistant', this)">
+      <span class="nav-icon">🤖</span> Assistant IA
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- ── DASHBOARD ── -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-title">Tableau de bord</div>
+      <div class="page-sub">Vue d'ensemble de votre comptabilité</div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Revenus</div>
+          <div class="kpi-value" id="kpi-rev">—</div>
+          <div class="kpi-delta up" id="kpi-rev-d">Chargement…</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Dépenses</div>
+          <div class="kpi-value" id="kpi-exp">—</div>
+          <div class="kpi-delta down" id="kpi-exp-d">Chargement…</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Solde net</div>
+          <div class="kpi-value" id="kpi-net">—</div>
+          <div class="kpi-delta" id="kpi-net-d">Chargement…</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Transactions</div>
+          <div class="kpi-value" id="kpi-count">—</div>
+          <div class="kpi-delta up" id="kpi-count-d">Chargement…</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="s-card">
+          <div class="s-card-header">
+            <div class="s-card-title">Dépenses par catégorie</div>
+          </div>
+          <div class="bar-chart" id="bar-chart"></div>
+        </div>
+        <div class="s-card">
+          <div class="s-card-header">
+            <div class="s-card-title">Répartition revenus / dépenses</div>
+          </div>
+          <div class="donut-wrap">
+            <canvas id="donut" width="120" height="120"></canvas>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="s-card">
+        <div class="s-card-header">
+          <div class="s-card-title">Dernières transactions</div>
+          <button class="btn btn-ghost" onclick="showPage('transactions', document.querySelector('[onclick*=transactions]'))">Voir tout</button>
+        </div>
+        <table class="data-table" id="recent-table">
+          <thead><tr><th>Date</th><th>Description</th><th>Catégorie</th><th>Type</th><th>Montant</th></tr></thead>
+          <tbody id="recent-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── TRANSACTIONS ── -->
+    <div id="page-transactions" class="page">
+      <div class="page-title">Transactions</div>
+      <div class="page-sub">Saisie manuelle et gestion des entrées/sorties</div>
+
+      <div class="s-card" style="margin-bottom:18px">
+        <div class="s-card-title" style="margin-bottom:16px">➕ Ajouter une transaction</div>
+        <div class="form-row three">
+          <div>
+            <label class="field-label">Date</label>
+            <input type="date" id="tx-date">
+          </div>
+          <div>
+            <label class="field-label">Type</label>
+            <select id="tx-type">
+              <option value="income">Revenu</option>
+              <option value="expense">Dépense</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">Montant (€)</label>
+            <input type="number" id="tx-amount" placeholder="0.00" min="0" step="0.01">
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label class="field-label">Description</label>
+            <input type="text" id="tx-desc" placeholder="Ex: Facture client Dupont">
+          </div>
+          <div>
+            <label class="field-label">Catégorie</label>
+            <select id="tx-cat">
+              <option>Ventes</option><option>Services</option><option>Salaires</option>
+              <option>Loyer</option><option>Fournitures</option><option>Marketing</option>
+              <option>Transport</option><option>Logiciels</option><option>Autre</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="addTransaction()">Ajouter</button>
+          <button class="btn btn-ghost" onclick="analyzeWithAI()">🤖 Analyser avec l'IA</button>
+        </div>
+      </div>
+
+      <div class="s-card">
+        <div class="s-card-header">
+          <div class="s-card-title">Toutes les transactions</div>
+          <div style="display:flex;gap:8px">
+            <select class="period-select" id="filter-type" onchange="renderAllTransactions()">
+              <option value="">Tous types</option>
+              <option value="income">Revenus</option>
+              <option value="expense">Dépenses</option>
+            </select>
+            <button class="btn btn-ghost" onclick="exportCSV()">⬇ CSV</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Description</th><th>Catégorie</th><th>Type</th><th>Montant</th><th></th></tr></thead>
+          <tbody id="all-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── FACTURES ── -->
+    <div id="page-factures" class="page">
+      <div class="page-title">Analyse de factures</div>
+      <div class="page-sub">Dépose un PDF ou une image — l'IA extrait automatiquement les données</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+            ondragover="event.preventDefault();this.classList.add('drag')"
+            ondragleave="this.classList.remove('drag')"
+            ondrop="handleDrop(event)">
+            <div class="upload-icon">📎</div>
+            <div class="upload-text">Déposer une facture ici</div>
+            <div class="upload-sub">PDF, image JPG/PNG · ou cliquer pour parcourir</div>
+          </div>
+          <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(event)">
+
+          <div class="s-card" style="margin-top:16px">
+            <div class="s-card-title" style="margin-bottom:12px">Ou décrire manuellement</div>
+            <div class="form-row full">
+              <div>
+                <label class="field-label">Contenu de la facture (texte)</label>
+                <textarea id="invoice-text" placeholder="Colle ici le texte d'une facture, un bon de commande…"></textarea>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="analyzeInvoice()">🤖 Analyser avec l'IA</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="s-card" id="invoice-result" style="min-height:220px">
+            <div class="s-card-title" style="margin-bottom:12px">Résultat de l'analyse</div>
+            <div id="invoice-output" style="color:var(--ink3);font-size:13px;line-height:1.7">
+              L'IA extraira : fournisseur, montant HT/TTC, TVA, date, numéro de facture, et te proposera de l'enregistrer automatiquement.
+            </div>
+            <div id="invoice-actions" style="margin-top:14px;display:none">
+              <button class="btn btn-accent" onclick="saveInvoiceAsTransaction()">✓ Enregistrer comme transaction</button>
+            </div>
+          </div>
+
+          <div class="s-card" style="margin-top:16px">
+            <div class="s-card-title" style="margin-bottom:10px">Factures analysées</div>
+            <div id="invoices-list" style="color:var(--ink3);font-size:13px">Aucune facture pour l'instant.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RAPPORTS ── -->
+    <div id="page-rapports" class="page">
+      <div class="page-title">Rapports IA</div>
+      <div class="page-sub">Génération automatique de rapports comptables et analyses</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px">
+        <div class="s-card" style="cursor:pointer;transition:box-shadow .2s,transform .15s;border-left:4px solid var(--accent)" onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''" onclick="generateReport('mensuel')">
+          <div style="font-size:28px;margin-bottom:10px">📅</div>
+          <div class="s-card-title" style="margin-bottom:4px">Bilan mensuel</div>
+          <div style="font-size:13px;color:var(--ink2)">Revenus, dépenses, solde et analyse par mois</div>
+          <div style="margin-top:12px;font-size:12px;color:var(--accent);font-weight:600">Générer →</div>
+        </div>
+        <div class="s-card" style="cursor:pointer;transition:box-shadow .2s,transform .15s;border-left:4px solid var(--amber)" onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''" onclick="generateReport('fiscal')">
+          <div style="font-size:28px;margin-bottom:10px">🏛</div>
+          <div class="s-card-title" style="margin-bottom:4px">Déclaration fiscale</div>
+          <div style="font-size:13px;color:var(--ink2)">Récap TVA, charges déductibles, résultat imposable</div>
+          <div style="margin-top:12px;font-size:12px;color:var(--amber);font-weight:600">Générer →</div>
+        </div>
+        <div class="s-card" style="cursor:pointer;transition:box-shadow .2s,transform .15s;border-left:4px solid var(--green)" onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''" onclick="generateReport('cashflow')">
+          <div style="font-size:28px;margin-bottom:10px">💰</div>
+          <div class="s-card-title" style="margin-bottom:4px">Analyse de trésorerie</div>
+          <div style="font-size:13px;color:var(--ink2)">Flux entrants/sortants et projections à 3 mois</div>
+          <div style="margin-top:12px;font-size:12px;color:var(--green);font-weight:600">Générer →</div>
+        </div>
+        <div class="s-card" style="cursor:pointer;transition:box-shadow .2s,transform .15s;border-left:4px solid var(--red)" onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''" onclick="generateReport('audit')">
+          <div style="font-size:28px;margin-bottom:10px">🔍</div>
+          <div class="s-card-title" style="margin-bottom:4px">Audit des dépenses</div>
+          <div style="font-size:13px;color:var(--ink2)">Identifier les postes à optimiser et économiser</div>
+          <div style="margin-top:12px;font-size:12px;color:var(--red);font-weight:600">Générer →</div>
+        </div>
+      </div>
+
+      <div id="report-output-card" style="display:none">
+        <div class="report-wrapper">
+          <!-- Header -->
+          <div class="report-header">
+            <div class="report-header-left">
+              <div class="report-badge" id="report-badge">📅 Bilan</div>
+              <div class="report-title-main" id="report-title-main">Rapport</div>
+              <div class="report-meta" id="report-meta">Généré le —</div>
+            </div>
+            <div class="report-actions">
+              <button class="btn btn-ghost" onclick="copyReport()">📋 Copier</button>
+              <button class="btn btn-ghost" onclick="window.print()">🖨 Imprimer</button>
+            </div>
+          </div>
+          <!-- KPIs -->
+          <div class="report-kpis" id="report-kpis"></div>
+          <!-- Body -->
+          <div class="report-body" id="report-content"></div>
+          <!-- Footer -->
+          <div class="report-footer">
+            <div class="report-footer-note">⚠️ Ce rapport est généré par IA à titre indicatif. Consultez un expert-comptable pour toute décision fiscale.</div>
+            <div style="font-size:11px;color:var(--ink3)" id="report-footer-date"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ASSISTANT ── -->
+    <div id="page-assistant" class="page">
+      <div class="page-title">Assistant Comptable IA</div>
+      <div class="page-sub">Posez toutes vos questions — TVA, charges, catégorisation…</div>
+
+      <div class="ai-panel">
+        <div class="ai-panel-header">
+          <div class="ai-dot"></div>
+          <div>
+            <div class="ai-name">Comptable IA</div>
+            <div class="ai-sub">Expert en comptabilité · Toujours disponible</div>
+          </div>
+        </div>
+        <div class="quick-pills" id="quick-pills">
+          <span class="pill" onclick="askAI('Quel est mon solde net actuel ?')">Solde net</span>
+          <span class="pill" onclick="askAI('Quelles sont mes plus grosses dépenses ?')">Top dépenses</span>
+          <span class="pill" onclick="askAI('Comment optimiser ma TVA ?')">Optimiser TVA</span>
+          <span class="pill" onclick="askAI('Quelles charges sont déductibles ?')">Charges déductibles</span>
+          <span class="pill" onclick="askAI('Analyse ma rentabilité ce mois-ci')">Rentabilité</span>
+        </div>
+        <div id="ai-messages">
+          <div class="ai-msg assistant">
+            <div class="ai-sender">Comptable IA</div>
+            <div class="ai-bubble">Bonjour ! Je suis votre assistant comptable. Je peux analyser vos données, répondre à vos questions fiscales, et vous aider à optimiser vos finances. Comment puis-je vous aider ?</div>
+          </div>
+        </div>
+        <div class="ai-input-row">
+          <input class="ai-input" id="ai-input" placeholder="Ex: Quelle est ma TVA à déclarer ce trimestre ?" onkeydown="if(event.key==='Enter')askAI()">
+          <button class="btn btn-primary" onclick="askAI()">Envoyer</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── DATA ──
+let transactions = [
+  { id:1, date:'2025-01-15', desc:'Facture client Dupont & Fils', cat:'Ventes', type:'income', amount:4200 },
+  { id:2, date:'2025-01-18', desc:'Loyer bureau janvier', cat:'Loyer', type:'expense', amount:1200 },
+  { id:3, date:'2025-02-03', desc:'Abonnement logiciels SaaS', cat:'Logiciels', type:'expense', amount:340 },
+  { id:4, date:'2025-02-10', desc:'Prestation conseil Martin', cat:'Services', type:'income', amount:2800 },
+  { id:5, date:'2025-02-20', desc:'Fournitures bureau', cat:'Fournitures', type:'expense', amount:180 },
+  { id:6, date:'2025-03-01', desc:'Facture client Leblanc', cat:'Ventes', type:'income', amount:5600 },
+  { id:7, date:'2025-03-05', desc:'Salaires mars', cat:'Salaires', type:'expense', amount:3200 },
+  { id:8, date:'2025-03-12', desc:'Campagne Google Ads', cat:'Marketing', type:'expense', amount:620 },
+];
+let nextId = 9;
+let aiConversation = [];
+let lastInvoiceData = null;
+let analyzedInvoices = [];
+
+// ── NAV ──
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (id === 'dashboard') refreshDashboard();
+  if (id === 'transactions') renderAllTransactions();
+}
+
+// ── DASHBOARD ──
+function refreshDashboard() {
+  const rev = transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const net = rev - exp;
+  document.getElementById('kpi-rev').textContent = fmt(rev);
+  document.getElementById('kpi-exp').textContent = fmt(exp);
+  document.getElementById('kpi-net').textContent = fmt(net);
+  document.getElementById('kpi-net').style.color = net>=0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('kpi-count').textContent = transactions.length;
+  document.getElementById('kpi-rev-d').textContent = '↑ +12% vs mois dernier';
+  document.getElementById('kpi-exp-d').textContent = '↓ -4% vs mois dernier';
+  document.getElementById('kpi-net-d').textContent = net>=0 ? '↑ Bénéficiaire' : '↓ Déficitaire';
+  document.getElementById('kpi-net-d').className = 'kpi-delta ' + (net>=0?'up':'down');
+  document.getElementById('kpi-count-d').textContent = '↑ +3 cette semaine';
+
+  // Recent
+  const tbody = document.getElementById('recent-tbody');
+  tbody.innerHTML = transactions.slice(-5).reverse().map(t => rowHtml(t, false)).join('');
+
+  // Bar chart
+  const cats = {};
+  transactions.filter(t=>t.type==='expense').forEach(t=>cats[t.cat]=(cats[t.cat]||0)+t.amount);
+  const maxV = Math.max(...Object.values(cats), 1);
+  const colors = ['#2563eb','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#be185d','#15803d'];
+  document.getElementById('bar-chart').innerHTML = Object.entries(cats).map(([k,v],i)=>`
+    <div class="bar-row">
+      <div class="bar-label">${k}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(v/maxV*100).toFixed(1)}%;background:${colors[i%colors.length]}"></div></div>
+      <div class="bar-val">${fmt(v)}</div>
+    </div>`).join('');
+
+  // Donut
+  drawDonut(rev, exp);
+
+  // Legend
+  document.getElementById('donut-legend').innerHTML = `
+    <div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div><div class="legend-label">Revenus</div><div class="legend-val">${fmt(rev)}</div></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#dc2626"></div><div class="legend-label">Dépenses</div><div class="legend-val">${fmt(exp)}</div></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><div class="legend-label">Net</div><div class="legend-val">${fmt(net)}</div></div>`;
+}
+
+function drawDonut(rev, exp) {
+  const canvas = document.getElementById('donut');
+  const ctx = canvas.getContext('2d');
+  const total = rev + exp || 1;
+  const cx = 60, cy = 60, r = 48, inner = 28;
+  ctx.clearRect(0, 0, 120, 120);
+  const slices = [[rev/total, '#2563eb'], [exp/total, '#dc2626']];
+  let angle = -Math.PI/2;
+  slices.forEach(([pct, color]) => {
+    const end = angle + pct * 2 * Math.PI;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, angle, end);
+    ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+    angle = end;
+  });
+  ctx.beginPath(); ctx.arc(cx, cy, inner, 0, 2*Math.PI);
+  ctx.fillStyle = '#ffffff'; ctx.fill();
+}
+
+// ── TRANSACTIONS ──
+function rowHtml(t, showDel=true) {
+  return `<tr>
+    <td style="color:var(--ink2);font-size:12px">${t.date}</td>
+    <td>${t.desc}</td>
+    <td><span style="font-size:12px;color:var(--ink2)">${t.cat}</span></td>
+    <td><span class="tag ${t.type==='income'?'income':'expense'}">${t.type==='income'?'Revenu':'Dépense'}</span></td>
+    <td><span class="amount ${t.type==='income'?'pos':'neg'}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</span></td>
+    ${showDel?`<td><span style="cursor:pointer;color:var(--ink3);font-size:12px" onclick="deleteTransaction(${t.id})">✕</span></td>`:''}
+  </tr>`;
+}
+
+function addTransaction() {
+  const date = document.getElementById('tx-date').value || today();
+  const type = document.getElementById('tx-type').value;
+  const amount = parseFloat(document.getElementById('tx-amount').value);
+  const desc = document.getElementById('tx-desc').value.trim();
+  const cat = document.getElementById('tx-cat').value;
+  if (!desc || !amount) { notif('⚠️ Veuillez remplir description et montant'); return; }
+  transactions.push({ id: nextId++, date, desc, cat, type, amount });
+  document.getElementById('tx-amount').value = '';
+  document.getElementById('tx-desc').value = '';
+  renderAllTransactions();
+  notif('✓ Transaction ajoutée');
+}
+
+function deleteTransaction(id) {
+  transactions = transactions.filter(t=>t.id!==id);
+  renderAllTransactions();
+  notif('Transaction supprimée');
+}
+
+function renderAllTransactions() {
+  const filter = document.getElementById('filter-type')?.value || '';
+  const list = filter ? transactions.filter(t=>t.type===filter) : transactions;
+  document.getElementById('all-tbody').innerHTML = [...list].reverse().map(t=>rowHtml(t, true)).join('');
+}
+
+function exportCSV() {
+  const header = 'Date,Description,Catégorie,Type,Montant\n';
+  const rows = transactions.map(t=>`${t.date},"${t.desc}",${t.cat},${t.type},${t.amount}`).join('\n');
+  const blob = new Blob([header+rows], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'transactions.csv'; a.click();
+}
+
+function analyzeWithAI() {
+  showPage('assistant', document.querySelector('[onclick*=assistant]'));
+  askAI('Analyse mes transactions récentes et donne-moi des recommandations.');
+}
+
+// ── FACTURES ──
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  notif('📎 Fichier reçu : ' + file.name);
+  document.getElementById('invoice-text').value = `[Fichier uploadé : ${file.name}]\nSimulation : Facture N°2025-042\nFournisseur : Société Exemple SARL\nDate : ${today()}\nMontant HT : 1 500,00 €\nTVA 20% : 300,00 €\nMontant TTC : 1 800,00 €`;
+  analyzeInvoice();
+}
+
+async function analyzeInvoice() {
+  const text = document.getElementById('invoice-text').value.trim();
+  if (!text) { notif('⚠️ Aucun texte de facture à analyser'); return; }
+
+  document.getElementById('invoice-output').innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  document.getElementById('invoice-actions').style.display = 'none';
+
+  const prompt = `Tu es un comptable expert. Analyse ce document de facturation et extrais les informations clés.
+Réponds en JSON structuré UNIQUEMENT, sans markdown, avec ces champs :
+{ "fournisseur": "", "numero": "", "date": "", "montant_ht": 0, "tva": 0, "montant_ttc": 0, "categorie": "", "description": "" }
+
+Document :
+${text}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600,
+        messages:[{role:'user', content:prompt}] })
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '{}';
+    let parsed;
+    try { parsed = JSON.parse(raw.replace(/```json|```/g,'').trim()); }
+    catch { parsed = null; }
+
+    if (parsed) {
+      lastInvoiceData = parsed;
+      document.getElementById('invoice-output').innerHTML = `
+        <table class="data-table">
+          <tr><td style="color:var(--ink2);font-size:12px">Fournisseur</td><td><strong>${parsed.fournisseur||'—'}</strong></td></tr>
+          <tr><td style="color:var(--ink2);font-size:12px">N° facture</td><td>${parsed.numero||'—'}</td></tr>
+          <tr><td style="color:var(--ink2);font-size:12px">Date</td><td>${parsed.date||'—'}</td></tr>
+          <tr><td style="color:var(--ink2);font-size:12px">Montant HT</td><td class="amount">${parsed.montant_ht ? parsed.montant_ht.toFixed(2)+' €' : '—'}</td></tr>
+          <tr><td style="color:var(--ink2);font-size:12px">TVA</td><td class="amount">${parsed.tva ? parsed.tva.toFixed(2)+' €' : '—'}</td></tr>
+          <tr><td style="color:var(--ink2);font-size:12px">Montant TTC</td><td class="amount neg"><strong>${parsed.montant_ttc ? parsed.montant_ttc.toFixed(2)+' €' : '—'}</strong></td></tr>
+          <tr><td style="color:var(--ink2);font-size:12px">Catégorie</td><td><span class="tag expense">${parsed.categorie||'Autre'}</span></td></tr>
+        </table>`;
+      document.getElementById('invoice-actions').style.display = 'block';
+      analyzedInvoices.unshift({ ...parsed, file: 'Facture analysée' });
+      renderInvoicesList();
+    } else {
+      document.getElementById('invoice-output').textContent = raw;
+    }
+  } catch (e) {
+    document.getElementById('invoice-output').textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function saveInvoiceAsTransaction() {
+  if (!lastInvoiceData) return;
+  const d = lastInvoiceData;
+  transactions.push({
+    id: nextId++,
+    date: d.date || today(),
+    desc: d.description || d.fournisseur || 'Facture',
+    cat: d.categorie || 'Autre',
+    type: 'expense',
+    amount: d.montant_ttc || d.montant_ht || 0
+  });
+  notif('✓ Facture enregistrée comme dépense');
+  document.getElementById('invoice-actions').style.display = 'none';
+}
+
+function renderInvoicesList() {
+  const el = document.getElementById('invoices-list');
+  if (!analyzedInvoices.length) { el.textContent = 'Aucune facture pour l\'instant.'; return; }
+  el.innerHTML = analyzedInvoices.map(inv=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span>${inv.fournisseur || 'Fournisseur'}</span>
+      <span class="amount neg">${inv.montant_ttc ? inv.montant_ttc.toFixed(2)+' €' : '—'}</span>
+    </div>`).join('');
+}
+
+// ── RAPPORTS ──
+const REPORT_CONFIG = {
+  mensuel:  { label:'Bilan mensuel',        emoji:'📅', badge:'mensuel',  color:'var(--accent)' },
+  fiscal:   { label:'Déclaration fiscale',  emoji:'🏛', badge:'fiscal',   color:'var(--amber)'  },
+  cashflow: { label:'Analyse de trésorerie',emoji:'💰', badge:'cashflow', color:'var(--green)'  },
+  audit:    { label:'Audit des dépenses',   emoji:'🔍', badge:'audit',    color:'var(--red)'    },
+};
+
+async function generateReport(type) {
+  const card = document.getElementById('report-output-card');
+  const content = document.getElementById('report-content');
+  const cfg = REPORT_CONFIG[type];
+
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  // Badge + titre
+  const badge = document.getElementById('report-badge');
+  badge.textContent = cfg.emoji + ' ' + cfg.label;
+  badge.className = 'report-badge ' + cfg.badge;
+  document.getElementById('report-title-main').textContent = cfg.label;
+  const now = new Date().toLocaleDateString('fr-FR', {day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('report-meta').textContent = 'Généré le ' + now;
+  document.getElementById('report-footer-date').textContent = 'Comptable IA · ' + now;
+
+  // KPIs
+  const rev = transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const net = rev - exp;
+  document.getElementById('report-kpis').innerHTML = `
+    <div class="report-kpi"><div class="report-kpi-label">Revenus totaux</div><div class="report-kpi-value blue">${fmt(rev)}</div></div>
+    <div class="report-kpi"><div class="report-kpi-label">Dépenses totales</div><div class="report-kpi-value red">${fmt(exp)}</div></div>
+    <div class="report-kpi"><div class="report-kpi-label">Solde net</div><div class="report-kpi-value ${net>=0?'green':'red'}">${fmt(net)}</div></div>`;
+
+  // Loading
+  content.innerHTML = `<div class="report-loading"><div class="report-loading-spinner"></div><div class="report-loading-text">Génération du rapport par l'IA…</div></div>`;
+
+  const txSummary = transactions.map(t=>`${t.date} | ${t.type==='income'?'+':'-'}${t.amount}€ | ${t.cat} | ${t.desc}`).join('\n');
+
+  const systemPrompt = `Tu es un expert-comptable français. Génère des rapports structurés en Markdown avec ces règles STRICTES :
+- Utilise ## pour les sections principales (ex: ## Synthèse)
+- Utilise ### pour les sous-sections
+- Utilise des listes à tirets (- item) pour les points clés
+- Utilise **gras** pour les chiffres et éléments importants
+- Sois précis, professionnel et actionnable
+- Maximum 500 mots
+- Ne répète pas les KPIs déjà affichés en haut`;
+
+  const prompts = {
+    mensuel:  `Génère un bilan mensuel comptable. Données: Revenus ${rev}€, Dépenses ${exp}€, Solde ${net}€.\nTransactions:\n${txSummary}`,
+    fiscal:   `Génère une synthèse fiscale (TVA collectée, TVA déductible, résultat imposable, charges déductibles). Données: Revenus ${rev}€, Dépenses ${exp}€.\nTransactions:\n${txSummary}`,
+    cashflow: `Analyse les flux de trésorerie et donne des projections à 3 mois avec des recommandations concrètes. Données: Revenus ${rev}€, Dépenses ${exp}€.\nTransactions:\n${txSummary}`,
+    audit:    `Audite les dépenses par catégorie, identifie les anomalies et les 3 postes à optimiser en priorité. Dépenses ${exp}€.\nTransactions:\n${txSummary}`
+  };
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000,
+        system: systemPrompt,
+        messages:[{role:'user', content:prompts[type]}] })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || 'Erreur de génération.';
+    content.innerHTML = renderReportMarkdown(text);
+  } catch(e) {
+    content.innerHTML = `<p style="color:var(--red)">Erreur : ${e.message}</p>`;
+  }
+}
+
+function renderReportMarkdown(md) {
+  // Highlights automatiques basés sur des mots-clés
+  let html = md
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m => '<ul>' + m + '</ul>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/^(?!<[hup])(.+)$/gm, (line) => line.trim() ? line : '');
+
+  // Envelopper les paragraphes orphelins
+  html = html.replace(/^([^<\n].+)$/gm, '<p>$1</p>');
+
+  // Détecter les lignes ⚠️ attention / ✓ positif
+  html = html
+    .replace(/<p>([^<]*(?:attention|risque|vigilance|déficit)[^<]*)<\/p>/gi,
+      '<div class="report-highlight warning">⚠️ $1</div>')
+    .replace(/<p>([^<]*(?:excellent|bonne performance|positif|félicitations)[^<]*)<\/p>/gi,
+      '<div class="report-highlight success">✓ $1</div>');
+
+  return html;
+}
+
+function copyReport() {
+  const text = document.getElementById('report-content').innerText;
+  navigator.clipboard.writeText(text);
+  notif('📋 Rapport copié');
+}
+
+// ── AI ASSISTANT ──
+async function askAI(text) {
+  const input = document.getElementById('ai-input');
+  const msg = text || input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  addAiMsg('user', msg);
+  aiConversation.push({ role:'user', content: msg });
+
+  const typingEl = addAiMsg('assistant', null, true);
+
+  const rev = transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const context = `Données comptables actuelles : Revenus ${rev}€, Dépenses ${exp}€, Solde net ${rev-exp}€, ${transactions.length} transactions.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:700,
+        system:`Tu es un expert-comptable français bienveillant et précis. ${context} Réponds de façon concise et pratique. Tu n'es pas Claude, tu es l'Assistant Comptable IA.`,
+        messages: aiConversation
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Désolé, je n\'ai pas pu répondre.';
+    typingEl.querySelector('.ai-bubble').innerHTML = reply.replace(/\n/g,'<br>');
+    typingEl.querySelector('.typing-dots')?.remove();
+    aiConversation.push({ role:'assistant', content: reply });
+  } catch(e) {
+    typingEl.querySelector('.ai-bubble').textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function addAiMsg(role, text, typing=false) {
+  const wrap = document.getElementById('ai-messages');
+  const div = document.createElement('div');
+  div.className = `ai-msg ${role}`;
+  div.innerHTML = `
+    <div class="ai-sender">${role==='user'?'Vous':'Comptable IA'}</div>
+    <div class="ai-bubble">${typing ? '<div class="typing-dots"><span></span><span></span><span></span></div>' : (text||'').replace(/\n/g,'<br>')}</div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+// ── UTILS ──
+function fmt(n) { return n.toLocaleString('fr-FR', {style:'currency',currency:'EUR',minimumFractionDigits:0}); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function updatePeriod(v) { notif('Période : ' + v); }
+
+let notifTimer;
+function notif(msg) {
+  const existing = document.querySelector('.notif');
+  if (existing) existing.remove();
+  clearTimeout(notifTimer);
+  const el = document.createElement('div');
+  el.className = 'notif'; el.textContent = msg;
+  document.body.appendChild(el);
+  notifTimer = setTimeout(() => el.remove(), 3000);
+}
+
+// Init
+document.getElementById('tx-date').value = today();
+refreshDashboard();
+</script>
+</body>
+</html>
